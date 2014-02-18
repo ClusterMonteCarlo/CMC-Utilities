@@ -42,3 +42,57 @@ def parseStoryDynamics(filename):
         
     file.close()
     return data    
+
+def stringsToFloats(stringArray):
+    for i in range(len(stringArray)): #probably a more pythonic way, but whatever
+        stringArray[i] = float(stringArray[i])
+    return stringArray
+
+def parseStoryTotals(filename):
+    data = []
+    i = 0
+    count = 0
+    
+    file = open(filename)
+    line = file.readline() #can't use 'with open as', the iterator breaks for some reason
+    
+    while line.split()[0] != 'system_time':
+        line = file.readline()
+    t = float(line.split()[2])
+    data.append(t)
+    line = file.readline()
+    numSingle = 0
+    numBinary = 0
+    numTriple = 0
+    
+    while line: #C SYNTAX 4EVAR!!!
+        if line.strip() == 'N = 1':
+            numSingle += 1
+        elif line.strip() == 'N = 2':
+            numBinary += 1
+        elif line.strip() == 'N = 3':
+            numTriple += 1
+        elif line.split()[0] == 'total_energy':
+            eTot = float(line.split()[2])
+        elif line.split()[0] == 'potential_energy':
+            ePot = float(line.split()[2])
+        elif line.split()[0] == 'kinetic_energy':
+            eKin = float(line.split()[2])
+        elif line.split()[0] == 'r_lagr':
+            lagRad = line.split()[2:]
+            lagRad = stringsToFloats(lagRad)
+        elif line.split()[0] == 'system_time':
+            virial = abs(2*eKin/ePot)
+            data[i].append(eTot,ePot,eKin,virial,numSingle,numBinary,numTriple)
+            data[i].append(lagRad)
+            i += 1
+            t = float(line.split()[2])
+            data.append([t])
+            numSingle = 0
+            numBinary = 0
+            numTriple = 0
+        line = file.readline()
+        
+    file.close()
+
+    return data 
