@@ -227,3 +227,48 @@ def escapedBH(filename = '', gamma = 0, N = 0, nBH = 65, thresh = 0.98094568, Co
     if not gamma == 0 and not N == 0:
         new[0] = N * new[0] / log( gamma * N )
     plot(new[0],new[1],color=Color)
+
+
+def rToXY(r):
+    from numpy import arccos,cos,sin,pi
+    from numpy.random import uniform
+    sinTheta = sin(arccos(uniform(-1,1)))
+    phi = uniform(0,2*pi)
+    x = r*sinTheta*cos(phi)
+    y = r*sinTheta*sin(phi)
+    return x,y
+
+def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30):
+    from matplotlib import animation, pyplot as plt
+    from os import listdir,system
+    from numpy import loadtxt
+
+    names = listdir('.')
+    snaps = [snap for snap in names if 'snap' in snap] #lol
+    snaps.sort()
+
+    if '.gz' in snaps[0] or '.gz' in snaps[-1]:
+        print 'Snapshots haven\'t been unzipped; it might take a while'
+        system('gunzip *.dat.gz') #there are like a million better ways to do this
+        print 'Done with that'
+
+    def animate(i):
+        r,m = loadtxt(snaps[i],usecols=(3,2),unpack=True)
+        points = [rToXY(p) for p in r]
+        x = [p[0] for p in points]
+        y = [p[1] for p in points]
+        scat = plt.scatter(x,y,s=1)
+        return scat
+
+    if noShow:
+        plt.ioff()
+
+    fig, ax = plt.subplots(figsize=(size,size))
+    animate(0)
+
+    anim = animation.FuncAnimation(fig,animate,frames=len(snaps)/100,interval=10,blit=False)
+    anim.save(filename,fps=fps)#,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
+
+
+
+
