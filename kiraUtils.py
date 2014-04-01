@@ -7,12 +7,16 @@ def parseStoryDynamics(filename):
 	line = file.readline() #can't use 'with open as', the iterator breaks for some reason
 	
 	while line:
-		if line.split()[0] == 'system_time':
+		if line.split()[0] == 'system_time': #grab shit from the root node
 			t = float(line.split()[2])
 			data.append([t])
 			i += 1
 			while line.split()[0] != ')Dynamics':
 				line = file.readline() #advance forward to end up dynamics
+				if line.split()[0] == 'com_pos':
+					xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
+				elif line.split()[0] == 'com_vel': 
+					vxCOM,vyCOM,vzCOM = stringsToFloats(line.split()[2:])
 		elif line.split()[0] == 'N':
 			if line.split()[2] == '2':
 				binFlag = 10
@@ -27,19 +31,19 @@ def parseStoryDynamics(filename):
 				binFlag = 1
 		elif line.split()[0] == 'r':
 			x,y,z = line.split()[2:]
-			x = float(x)
-			y = float(y)
-			z = float(z)
+			x = float(x) + xCOM
+			y = float(y) + yCOM
+			z = float(z) + zCOM
 		elif line.split()[0] == 'v':
 			vx,vy,vz = line.split()[2:]
-			vx = float(vx)
-			vy = float(vy)
-			vz = float(vz)
+			vx = float(vx) + vxCOM
+			vy = float(vy) + vyCOM
+			vz = float(vz) + vzCOM
 		elif line.split()[0] == ')Dynamics':
 			data[i].append([x,y,z,vx,vy,vz,binFlag])
 			line = file.readline()
 			while count != 0:
-				if line.split()[0] != ')Dynamics':
+				if line.split()[0] == ')Dynamics':
 					count -= 1
 				line = file.readline()
 		line = file.readline()
@@ -63,7 +67,7 @@ def parseStoryTotals(filename):
 	while line.split()[0] != 'system_time':
 		line = file.readline()
 	t = float(line.split()[2])
-	data.append(t)
+	data.append([t])
 	line = file.readline()
 	numSingle = 0
 	numBinary = 0
@@ -90,7 +94,7 @@ def parseStoryTotals(filename):
 			lagRad = stringsToFloats(lagRad)
 		elif line.split()[0] == 'system_time':
 			virial = abs(2*eKin/ePot)
-			data[i].append(eTot,ePot,eKin,virial,numSingle,numBinary,numTriple,numQuad)
+			data[i].append([eTot,ePot,eKin,virial,numSingle,numBinary,numTriple,numQuad])
 			data[i].append(lagRad)
 			i += 1
 			t = float(line.split()[2])
@@ -120,20 +124,22 @@ def make2dDynamicsMovie(data, filename="output.mp4", Min=-20, Max=20, size=8, fp
 		plt.cla()
 		t = data[i][0]
 		scat = ax.scatter([p[0] for p in data[i][1:]], [p[1] for p in data[i][1:]],
-			 c=[p[6] for p in data[i][1:]],
-			  s=[20*p[6] for p in data[i][1:]],
+			  s=[8*p[6] for p in data[i][1:]],
 				alpha=0.8)
+		for j in range(1,min(i,10)):
+			scat = ax.scatter([p[0] for p in data[i-j][1:]], [p[1] for p in data[i-j][1:]],
+					alpha=(1.-j/10.)/4, s = 3*(1-j/10.))
 		plt.title("Time = " + str(t))
 		plt.xlim(Min,Max)
 		plt.ylim(Min,Max)
 		plt.grid(True)
-		return scat
+		return scat 
 	
 	if noShow:
 		plt.ioff()
 
 	fig, ax = plt.subplots(figsize=(size,size))
-	scat = animate(0)
+	animate(0)
 
 	anim = animation.FuncAnimation(fig,animate,frames=len(data),interval=10,blit=False)
 	anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
@@ -156,23 +162,27 @@ def make3dDynamicsMovie(data, filename="output.mp4", Min=-20, Max=20, size=8, fp
 		x = [p[0] for p in data[i][1:]]
 		y = [p[1] for p in data[i][1:]]
 		z = [p[2] for p in data[i][1:]]
-		color = [p[6] for p in data[i][1:]]
 		scat = ax.scatter3D(x,y,z,
-				 s= [20*p[6] for p in data[i][1:]], c=color,
+				 s= [20*p[6] for p in data[i][1:]],
 						  alpha=0.8)
+		for j in range(1,min(i,50)):
+			scat = ax.scatter3D([p[0] for p in data[i-j][1:]],
+			                    [p[1] for p in data[i-j][1:]],
+								[p[2] for p in data[i-j][1:]],
+					alpha=(1-j/50.), s = 5*(1-j/50.))
 		ax.set_xlim(Min,Max) 
 		ax.set_ylim(Min,Max)
 		ax.set_zlim(Min,Max)
-		#ax.grid(False)
-		#ax.set_axis_off()
+		ax.grid("off")
+		ax.set_axis_off()
 		return scat
 
 	if noShow:
 		plt.ioff()
 
 	fig = plt.figure(figsize=(size,size))
-	ax = fig.add_subplot(111, projection='3d')
-
+	#ax = fig.add_subplot(111, projection='3d')
+	ax = Axes3D(fig)
 	anim = animation.FuncAnimation(fig,animate,frames=len(data),interval=10,blit=False)
 	anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
 
