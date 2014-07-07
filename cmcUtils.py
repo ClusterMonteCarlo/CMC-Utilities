@@ -214,7 +214,7 @@ def escapedBH(filename = '', gamma = 0, N = 0, nBH = 65, thresh = 0.98094568, Co
     gamma and N -- for conversion to N-body time
     nBH -- number of initial black holes"""
     from os import listdir
-    from numpy import loadtxt, log, transpose
+    from numpy import loadtxt, log, transpose, append
     from matplotlib.pyplot import plot,yscale,ylim,grid,xlabel,ylabel,text,title
     if filename == '':
         filename = [name for name in listdir('.') if name.endswith('.esc.dat')][0]
@@ -223,10 +223,12 @@ def escapedBH(filename = '', gamma = 0, N = 0, nBH = 65, thresh = 0.98094568, Co
     for dat in new:
         nBH += -dat[1]
         dat[1] = nBH
-    new = transpose(new)
+    t, NBH = transpose(new)
+    NBH = append(NBH,NBH[-1]) #kludge to make the line extend if single BH remaining
+    t = append(t,2*t[-1]) #HILARIOUSLY bad form
     if not gamma == 0 and not N == 0:
-        new[0] = N * new[0] / log( gamma * N )
-    plot(new[0],new[1],color=Color)
+        t = N * t / log( gamma * N )
+    plot(t,NBH,color=Color)
 
 
 def rToXY(r):
@@ -238,27 +240,37 @@ def rToXY(r):
     y = r*sinTheta*sin(phi)
     return x,y
 
-def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30):
+def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-5,Max=5):
     from matplotlib import animation, pyplot as plt
     from os import listdir,system
     from numpy import loadtxt
 
     names = listdir('.')
-    snaps = [snap for snap in names if 'snap' in snap] #lol
+    snaps = [snap for snap in names if 'out.snap' in snap] #lol
     snaps.sort()
 
     if '.gz' in snaps[0] or '.gz' in snaps[-1]:
         print 'Snapshots haven\'t been unzipped; it might take a while'
         system('gunzip *.dat.gz') #there are like a million better ways to do this
         print 'Done with that'
+        names = listdir('.')
+        snaps = [snap for snap in names if 'out.snap' in snap] #lol
+        snaps.sort()
 
     def animate(i):
-        r,m = loadtxt(snaps[i],usecols=(3,2),unpack=True)
-        points = [rToXY(p) for p in r]
-        x = [p[0] for p in points]
-        y = [p[1] for p in points]
-        scat = plt.scatter(x,y,s=1)
-        return scat
+            plt.cla()
+            mANDr = loadtxt(snaps[i],usecols=(14,2))
+            points = [rToXY(p[1]) for p in mANDr]
+            x = [p[0] for p in points]
+            y = [p[1] for p in points]
+            plt.xlim(Min,Max)
+            plt.ylim(Min,Max)
+            scat = plt.scatter(x,y,s=0.05,color='black')
+            points = [rToXY(p[1]) for p in mANDr if p[0] ==14]
+            x = [p[0] for p in points]
+            y = [p[1] for p in points]
+            scatBH = plt.scatter(x,y,s=10,color='red')
+            return scat
 
     if noShow:
         plt.ioff()
@@ -267,7 +279,7 @@ def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30):
     animate(0)
 
     anim = animation.FuncAnimation(fig,animate,frames=len(snaps)/100,interval=10,blit=False)
-    anim.save(filename,fps=fps)#,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
+    anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
 
 
 
