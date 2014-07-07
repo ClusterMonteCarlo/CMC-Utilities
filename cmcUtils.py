@@ -240,7 +240,11 @@ def rToXY(r):
     y = r*sinTheta*sin(phi)
     return x,y
 
+<<<<<<< HEAD
 def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-5,Max=5):
+=======
+def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-4,Max=4):
+>>>>>>> 711d3ecb3cd394c32d7a64d5c95294bedf8d1ffb
     from matplotlib import animation, pyplot as plt
     from os import listdir,system
     from numpy import loadtxt
@@ -258,6 +262,7 @@ def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-5,Max
         snaps.sort()
 
     def animate(i):
+<<<<<<< HEAD
             plt.cla()
             mANDr = loadtxt(snaps[i],usecols=(14,2))
             points = [rToXY(p[1]) for p in mANDr]
@@ -271,16 +276,57 @@ def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-5,Max
             y = [p[1] for p in points]
             scatBH = plt.scatter(x,y,s=10,color='red')
             return scat
+=======
+        plt.cla()
+        mANDr = loadtxt(snaps[i],usecols=(1,2))
+        points = [rToXY(p[1]) for p in mANDr]
+        x = [p[0] for p in points]
+        y = [p[1] for p in points]
+        plt.xlim(Min,Max) 
+        plt.ylim(Min,Max)
+        scat = plt.scatter(x,y,s=0.05,color='black')
+        points = [rToXY(p[1]) for p in mANDr if p[0] > 1.]
+        x = [p[0] for p in points]
+        y = [p[1] for p in points]
+        scatBH = plt.scatter(x,y,s=10,color='red')
+        plt.grid(True)
+        return scat
+>>>>>>> 711d3ecb3cd394c32d7a64d5c95294bedf8d1ffb
 
     if noShow:
         plt.ioff()
 
     fig, ax = plt.subplots(figsize=(size,size))
+<<<<<<< HEAD
     animate(0)
 
     anim = animation.FuncAnimation(fig,animate,frames=len(snaps)/100,interval=10,blit=False)
     anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
 
+=======
+    #animate(0)
+>>>>>>> 711d3ecb3cd394c32d7a64d5c95294bedf8d1ffb
 
+    anim = animation.FuncAnimation(fig,animate,frames=len(names),interval=1,blit=False)
+    anim.save(filename,fps=fps,extra_args=['-vb','10M','-vcodec', 'mpeg4'])
 
+def kroupaIMF(M):
+	"""returns f(m) for a specific mass
+		taken from Kroupa 2001"""
+	if m < 0.01:
+		return 0
+	elif 0.01 <= m < 0.08:
+		a = 0.3
+	elif 0.08 <= m < 0.5:
+		a = 1.3
+	elif 0.5 <= m < 1.:
+		a = 2.3
+	elif 1.0 <= m:
+		a = 2.3
+	return m**-a
+	
+def kroupaSampler(total_mass,min_mass,max_mass,N):
+	"""returns a set of N stars sampled from 
+		the Kroupa IMF"""
+	a = 5.08854*total_mass
 
