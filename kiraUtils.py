@@ -35,14 +35,14 @@ def parseStoryDynamics(filename):
 			m = float(line.split()[2])
 		elif line.split()[0] == 'r':
 			x,y,z = line.split()[2:]
-			x = float(x)# + xCOM
-			y = float(y)# + yCOM
-			z = float(z)# + zCOM
+			x = float(x) + xCOM
+			y = float(y) + yCOM
+			z = float(z) + zCOM
 		elif line.split()[0] == 'v':
 			vx,vy,vz = line.split()[2:]
-			vx = float(vx)# + vxCOM
-			vy = float(vy)# + vyCOM
-			vz = float(vz)# + vzCOM
+			vx = float(vx) + vxCOM
+			vy = float(vy) + vyCOM
+			vz = float(vz) + vzCOM
 		elif line.split()[0] == ')Dynamics':
 			data[i].append([x,y,z,vx,vy,vz,binFlag,m,idNum])
 			line = file.readline()
