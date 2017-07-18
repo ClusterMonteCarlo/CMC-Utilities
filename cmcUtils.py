@@ -4,11 +4,12 @@ def plotLagRad(filename = '', gamma = 0, N = 0,Color='r'):
 	gamma and N -- for conversion to N-body time"""
 	from os import listdir
 	from numpy import loadtxt, log
-	from matplotlib.pyplot import plot,yscale,ylim,grid,xlabel,ylabel,text,title
+	from matplotlib.pyplot import figure, plot,yscale,ylim,grid,xlabel,ylabel,text,title
 	if filename == '':
 		filename = [name for name in listdir('.') if name.endswith('.lagrad.dat')][0]
-	#colsToImport = (0,9,14,22,24,28,29,30,32,33,34,35,36,37,38,39)
-	colsToImport = (0,6,7,8,11,12,13,16,17,18,19,20,21,22,23,24)
+	colsToImport = (0,9,14,22,24,28,29,30,32,33,34,35,36,37,38,39)
+	#colsToImport = (0,6,7,8,11,12,13,16,17,18,19,20,21,22,23,24)
+	figure()
 	data = loadtxt(filename,unpack=True,usecols=colsToImport)
 	xName = 'Time (FP Units)'
 	yName = 'Lagrange Radii'
@@ -45,7 +46,8 @@ def plotEnergy(filename='',gamma=0,N=0,quant=['etot']):
 		Ebesc	  - Total escaped Binary Energies
 		Eintesc	- Total escaped internal energy
 		Eoops	  - Total energy lost during regularization
-		EoT		- Total + Eoops"""
+		EoT		- Total + Eoops
+		Ekira     - Total energy in kira multiples"""
 	from os import listdir
 	from numpy import loadtxt, log
 	from matplotlib.pyplot import figure,plot,legend,ylim,grid,xlabel,ylabel,text,title
@@ -55,9 +57,6 @@ def plotEnergy(filename='',gamma=0,N=0,quant=['etot']):
 	legendText = []
 	xName = 'Time (FP Units)'
 	yName = 'Energy (E_TOT(0) = 0.25)'
-	if not gamma == 0 and not N == 0:
-		data[0] = data[0] * N / log(gamma*N)
-		xName = 'Time (N-Body Units)'
 	if 'etot' in quant:
 		colsToImport += tuple([9])
 		legendText.append('Total')
@@ -91,7 +90,13 @@ def plotEnergy(filename='',gamma=0,N=0,quant=['etot']):
 	if 'EoT' in quant:
 		colsToImport += tuple([19])
 		legendText.append('E_oops + E_total')
+	if 'Ekira' in quant:
+		colsToImport += tuple([29])
+		legendText.append('E_kira_multi')
 	data = loadtxt(filename,unpack=True,usecols=colsToImport)
+	if not gamma == 0 and not N == 0:
+		data[0] = data[0] * N / log(gamma*N)
+		xName = 'Time (N-Body Units)'
 	figure()
 	for index in range(1,len(colsToImport)):
 		plot(data[0],data[index])
