@@ -2,6 +2,7 @@ from scipy import integrate
 from scipy.integrate import ode
 from scipy.optimize import brentq
 from numpy.random import uniform
+import numpy as np
 
 def chirp_mass(m1,m2,z=0):
     return (1+z)*(m1*m2)**0.6 / (m1+m2)**0.2
@@ -62,7 +63,7 @@ def a_at_fLow(m1,m2,fLow = 5):
     Masses in solar masses, fLow in Hz
     """
     G = 3.9652611e-14 # G in au,solar mass, seconds
-    quant = G*(m1+m2) / (4*pi**2 * fLow**2)
+    quant = G*(m1+m2) / (4*np.pi**2 * fLow**2)
     return quant**(1./3)
 
 def eccentricity_at_fLow(m1,m2,a_0,e_0,fLow=5):
@@ -94,7 +95,7 @@ def period_to_au(p,m):
     with mass m (solar masses) and period p (days)
     """
     g = 2.96e-4 # G in days,AU,solar masses
-    return (g*m*p**2 / (4*pi**2))**0.333333334
+    return (g*m*p**2 / (4*np.pi**2))**0.333333334
 
 def au_to_period(a,m):
     """
@@ -102,7 +103,7 @@ def au_to_period(a,m):
     with mass m (solar masses) and sem-major axis a (AU)
     """
     g = 2.96e-4 # G in days,AU,solar masses
-    return sqrt(a**3 * 4*pi**2 / (g*m))
+    return sqrt(a**3 * 4*np.pi**2 / (g*m))
 
 def au_to_vel(a,m):
     """
@@ -110,7 +111,7 @@ def au_to_vel(a,m):
     with mass m (solar masses) and sem-major axis a (AU)
     """
     period = au_to_period(a,m)
-    return 2*pi*a / period
+    return 2*np.pi*a / period
 
 def half_mass_relaxation_time(N,rh,m,gamma):
     """
@@ -165,11 +166,11 @@ def dVcdz(z):
     omegaL = 1 - 0.306
     dh = 3000. / h
     e = sqrt(omegaM*(1+z)**3 + omegaL)
-    return 4*pi*dh*comovingDistance(z)**2/e
+    return 4*np.pi*dh*comovingDistance(z)**2/e
 
 def Vc(z):
     Dl = luminosityDistance(z)
-    return 1.3333333334*pi*Dl**3 / (1+z)**3
+    return 1.3333333334*np.pi*Dl**3 / (1+z)**3
 
 def probZFlatInVc(z,Zmax):
     return dVcdz(z)/Vc(Zmax)
