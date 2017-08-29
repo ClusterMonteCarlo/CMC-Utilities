@@ -1,4 +1,14 @@
 def parseStoryDynamics(filename):
+	"""
+	Imports a Starlab Story for the dynamical information
+
+	For a file with S snapshots and N particles, it yields an object of size
+
+	story[S][N][9]
+
+	Where the 8 elements of the array for each particle are:
+		[x,y,z,vx,vy,vz,binFlag,m,id]
+	"""
 	data = []
 	i = -1
 	count = 0
@@ -7,6 +17,7 @@ def parseStoryDynamics(filename):
 	line = file.readline() #can't use 'with open as', the iterator breaks for some reason
 	
 	while line:
+
 		if line.split()[0] == 'system_time': #grab shit from the root node
 			t = float(line.split()[2])
 			data.append([t])
@@ -21,13 +32,13 @@ def parseStoryDynamics(filename):
 			idNum = int(line.split()[2])
 		elif line.split()[0] == 'N':
 			if line.split()[2] == '2':
-				binFlag = 10
+				binFlag = 2
 				count = 2
 			elif line.split()[2] == '3':
-				binFlag = 50
+				binFlag = 3
 				count = 3
 			elif line.split()[2] == '4':
-				binFlag = 90
+				binFlag = 4
 				count = 4
 			else:
 				binFlag = 1
@@ -67,28 +78,36 @@ def parseStoryTotals(filename):
 	eKin = 0
 	ePot = 0
 	eDyn = 0
-	from numpy import zeros
+	from numpy import zeros,array,hstack,isnan
 	eTot,ePot,eKin,virial,numSingle,numBinary,numTriple,numQuad = zeros(8) 
 	lagRad = 0
 
 	file = open(filename)
 	line = file.readline() #can't use 'with open as', the iterator breaks for some reason
+
+	while line.split()[0] != ')Dynamics':
+		line = file.readline() #advance forward to end up dynamics
+		if line.split()[0] == 'com_pos':
+			xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
+		elif line.split()[0] == 'com_vel': 
+			vxCOM,vyCOM,vzCOM = stringsToFloats(line.split()[2:])
 	
 	while line.split()[0] != 'system_time':
 		line = file.readline()
 	t = float(line.split()[2])
+
 	if t == 0.: #need to skip the initial print, if present
 		line = file.readline()
 		while line.split()[0] != 'system_time':
 			line = file.readline()
 		t = float(line.split()[2])
-	data.append([t])
 	line = file.readline()
 	scale = 0
 	numSingle = 0
 	numBinary = 0
 	numTriple = 0
 	numQuad= 0
+
 	
 	while line: #C SYNTAX 4EVAR!!!
 		if line.strip() == 'N = 1':
@@ -112,13 +131,14 @@ def parseStoryTotals(filename):
 		elif line.split()[0] == 'r_lagr':
 			lagRad = line.split()[2:]
 			lagRad = stringsToFloats(lagRad)
+		elif line.split()[0] == 'com_pos':
+			xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
+		elif line.split()[0] == 'com_vel': 
+			vxCOM,vyCOM,vzCOM = stringsToFloats(line.split()[2:])
 		elif line.split()[0] == 'system_time':
 			virial = abs(2*eKin/(ePot))
-			data[i].append([eTot,ePot,eKin,virial,eDyn,scale,numSingle,numBinary,numTriple,numQuad])
-			data[i].append(lagRad)
-			i += 1
+			data.append(tuple(hstack([t,array([eTot,ePot,eKin,virial,eDyn,scale,numSingle,numBinary,numTriple,numQuad]),lagRad,xCOM,yCOM,zCOM,vxCOM,vyCOM,vzCOM])))
 			t = float(line.split()[2])
-			data.append([t])
 			numSingle = 0
 			numBinary = 0
 			numTriple = 0
@@ -128,18 +148,34 @@ def parseStoryTotals(filename):
 	file.close()
 	del data[-1]
 
-	return data 
+	i = 0
+	while isnan(data[i][4]):
+		i+=1
+
+	out_array = array(data[i:], dtype=[('t', '<f8'), ('e', '<f8'),
+	('pe', '<f8'), ('ke', '<f8'), ('vir', '<f8'), ('efric', '<f8'), ('scale',
+	'<f8'), ('n', '<i8'), ('nb', '<i8'), ('nt', '<i8'), ('nq', '<i8'), ('lag90',
+	'<f8'), ('lag80', '<f8'), ('lag70', '<f8'), ('lag60', '<f8'), ('lag50',
+	'<f8'), ('lag40', '<f8'), ('lag30', '<f8'), ('lag20', '<f8'), ('lag10',
+	'<f8'), ('xCOM', '<f8'), ('yCOM', '<f8'), ('zCOM', '<f8'), ('vxCOM', '<f8'),
+	('vyCOM', '<f8'), ('vzCOM', '<f8')]) 
+	return out_array
+
 
 def plotNTotals(data):
+	"""
+	Plots number of singles, binaries, and higher over time
+	Takes the data from parseStoryTotals
+	"""
 	import matplotlib.pyplot as plt
 	from numpy import array
 	plt.ion()
 	plt.figure()
-	t = array([step[0] for step in data])
-	totals = array([step[1][5:] for step in data])
-	totalsTranspose = totals.T
-	for count in totalsTranspose:
-		plt.plot(t,count)
+	t = data['t']
+	plt.plot(t,data['n'])
+	plt.plot(t,data['nb'])
+	plt.plot(t,data['nt'])
+	plt.plot(t,data['nq'])
 	plt.grid(True)
 	plt.legend((r'$N_{total}$',r'$N_{bin}$',
 	            r'$N_{trip}$',r'$N_{quad}$'),loc=6)
@@ -147,31 +183,34 @@ def plotNTotals(data):
 	plt.ylabel('Number')
 
 def plotLagRad(data):
+	"""
+	Plots number Lagrange Radii over time 
+	Takes the data from parseStoryTotals
+	"""
 	import matplotlib.pyplot as plt
 	from numpy import array
 	plt.ion()
 	plt.figure()
-	t = array([step[0] for step in data])
-	lagRad = array([step[2] for step in data])
-	lagRadTranspose = lagRad.T
-	for radius in lagRadTranspose:
-		plt.plot(t,radius)
+	lagrads = ['lag90','lag80','lag70','lag60','lag50','lag40','lag30','lag20','lag10',]
+	for lagrad in lagrads:
+		plt.plot(data['t'],data[lagrad])
 	plt.grid(True)
-	plt.xlabel('Time (crossing times)')
+	plt.xlabel('Time (Crossing Times)')
 	plt.ylabel('Lagrange Radii')
 	
 def plotEnergies(data):
+	"""
+	Plots various energy quantities over time 
+	Takes the data from parseStoryTotals
+	"""
 	import matplotlib.pyplot as plt
 	from numpy import array
 	plt.ion()
 	plt.figure()
-	t = array([step[0] for step in data])
-	energies = array([step[1][:4] for step in data])
-	eTot, ePot, eKin, virial = energies.T
-	plt.plot(t,eTot)
-	plt.plot(t,ePot)
-	plt.plot(t,eKin)
-	plt.plot(t,virial)
+	plt.plot(data['t'],data['e'])
+	plt.plot(data['t'],data['pe'])
+	plt.plot(data['t'],data['ke'])
+	plt.plot(data['t'],data['vir'])
 	plt.grid(True)
 	plt.legend((r'$E_{total}$',r'$E_{potential}$',
 	            r'$E_{kinetic}$',r'$Virial =2E_k/E_p$'),loc=0)
@@ -198,41 +237,79 @@ def rToXYZ(r):
 	z = r*cos(angle)
 	return x,y,z
 
+def pos_and_vel_to_xyz(r,vr,vt):
+	from numpy import arccos,cos,sin,pi,sqrt
+	from numpy.random import uniform
+	theta = arccos(uniform(-1,1))
+	phi = uniform(0,2*pi)
+	angle = uniform(0,2*pi)
+
+	x = r*sin(theta)*cos(phi)
+	y = r*sin(theta)*sin(phi)
+	z = r*cos(theta)
+
+	v = sqrt(vr**2 + vt**2)
+	thetaDot = cos(angle)*vt / r
+	phiDot = sin(angle)*vt / (r * sin(theta))
+	
+	vx = vr*sin(theta)*cos(phi) + \
+	     r*thetaDot*cos(theta)*cos(phi) - \
+		 r*phiDot*sin(theta)*sin(phi)
+	vy = vr*sin(theta)*sin(phi) + \
+	     r*thetaDot*cos(theta)*sin(phi) + \
+		 r*phiDot*sin(theta)*cos(phi)
+	vz = vr*cos(theta) - r*thetaDot*sin(theta)
+	return x,y,z,vx,vy,vz
 
 def make2dDynamicsMovie(data, filename="output.mp4", Min=-20, Max=20, size=8,
-fps=30, noShow=True, streaks=True):
+fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0,COM=False):
 	"""
 	Make a 2D movie of the dynamics from kira, using the data from parseStoryDynamics
 	filename - duh
 	Min/Max  - size of the plot range
 	size	 - size of the saved figures
 	fps	  - duh
+	point_size - how big the points on the figure are (default 100000)
 	noShow   - don't show the movie plots as they're being made
+	streaks - put those crappy streaks behind the stars as 
+	num_frames - how many frames to draw (default is all)
+	COM - put a + at the center of mass
 	"""
 	from matplotlib import animation, pyplot as plt
-	from numpy import loadtxt
+	from numpy import loadtxt,sqrt
+	from numpy.linalg import norm
 
-	#mANDr = loadtxt('64k-20-0.02-1.snap0015.dat',usecols=(1,2))
-	#points = [rToXY(p[1]) for p in mANDr]
-	#x = [p[0] for p in points]
-	#y = [p[1] for p in points]
-	mThresh = 0.0002
-
-	def animate(i):
+	def animate(i,data,ax):
 		plt.cla()
-		#scat = plt.scatter(x,y,s=0.05,color='black')
 		t = data[i][0]
-		scat = ax.scatter([p[0] for p in data[i][1:] if p[7] > mThresh], [p[1] for p in data[i][1:] if p[7] > mThresh],
-			  s=[8*p[6] for p in data[i][1:] if p[7] > mThresh],
-				alpha=1,color='r')
+		scat = ax.scatter([p[0] for p in data[i][1:] if norm(p[:3]) < Max and p[6] == 1],
+						  [p[1] for p in data[i][1:] if norm(p[:3]) < Max and p[6] == 1],
+				  s=[point_size*p[7] for p in data[i][1:] if norm(p[:3]) < Max and p[6] == 1],
+				    alpha=1,color='r')
+		scat = ax.scatter([p[0] for p in data[i][1:] if norm(p[:3]) < Max and
+		p[7] >= 0.00051],
+						  [p[1] for p in data[i][1:] if norm(p[:3]) < Max and
+						  p[7] >= 0.00051],
+				  s=[2*point_size*p[7] for p in data[i][1:] if norm(p[:3]) < Max
+				  and p[7] >= 0.00051],
+					alpha=1,color='b')
+		scat = ax.scatter([p[0] for p in data[i][1:] if norm(p[:3]) < Max and p[6] > 2],
+						  [p[1] for p in data[i][1:] if norm(p[:3]) < Max and p[6] > 2],
+				  s=[4*point_size*p[7] for p in data[i][1:] if norm(p[:3]) < Max and p[6] > 2],
+					alpha=1,color='g')
 		if streaks:
 			for j in range(1,min(i,10)):
-				scat = ax.scatter([p[0] for p in data[i-j][1:] if p[7] > mThresh], [p[1] for p in data[i-j][1:] if p[7] > mThresh],
+				scat = ax.scatter([p[0] for p in data[i-j][1:]], [p[1] for p in data[i-j][1:]],
 					alpha=(1.-j/10.)/4, s = 3*(1-j/10.),color='r')
-		scat = ax.scatter([p[0] for p in data[i][1:] if p[7] < mThresh], [p[1] for p in data[i][1:] if p[7] < mThresh],
-			  s=[1*p[6] for p in data[i][1:] if p[7] < mThresh],
-				alpha=0.5,color='black')
-		plt.title("Time = " + str(t))
+		if COM:
+			X_COM = sum([p[0]*p[7] for p in data[i][1:]]) / sum([p[7] for p in data[i][1:]])
+			Y_COM = sum([p[1]*p[7] for p in data[i][1:]]) / sum([p[7] for p in data[i][1:]])
+			scat = ax.scatter(X_COM,Y_COM,marker='x',color='black',s=100)
+
+			X_COV = sum([p[3]*p[7] for p in data[i][1:]]) / sum([p[7] for p in data[i][1:]])
+			Y_COV = sum([p[4]*p[7] for p in data[i][1:]]) / sum([p[7] for p in data[i][1:]])
+			scat = ax.scatter(X_COV,Y_COV,marker='x',color='r',s=100)
+		plt.title("Time = " + str(t)[:5])
 		plt.xlim(Min,Max)
 		plt.ylim(Min,Max)
 		plt.grid(True)
@@ -242,11 +319,40 @@ fps=30, noShow=True, streaks=True):
 		plt.ioff()
 
 	fig, ax = plt.subplots(figsize=(size,size))
-	animate(0)
 
-	anim = animation.FuncAnimation(fig,animate,frames=len(data),interval=10,blit=False)
-	anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
 
+	if num_frames == 0:
+		num_frames = len(data) - 1
+
+	if num_frames > len(data):
+		print "More frames than snapshots!"
+		return
+
+	anim = animation.FuncAnimation(fig,animate,frames=num_frames,fargs=[data,ax],blit=False)
+	anim.save(filename,writer='ffmpeg',fps=20,dpi=300)
+
+
+#anim.save(filename, writer=None, fps=None, dpi=None, codec=None, bitrate=None,extra_args=None, metadata=None, extra_anim=None, savefig_kwargs=None)
+
+
+def gauplot(centers, radiuses, xr=None, yr=None):
+	import matplotlib.pyplot as plt,numpy as np
+	nx, ny = 1000.,1000.
+	xgrid, ygrid = np.mgrid[xr[0]:xr[1]:(xr[1]-xr[0])/nx,yr[0]:yr[1]:(yr[1]-yr[0])/ny]
+	im = xgrid*0 + np.nan
+	xs = np.array([np.nan])
+	ys = np.array([np.nan])
+	fis = np.concatenate((np.linspace(-np.pi,np.pi,100), [np.nan]) )
+	cmap = plt.cm.gray
+	cmap.set_bad('white')
+	thresh = 3
+	for curcen,currad in zip(centers,radiuses):
+			curim=(((xgrid-curcen[0])**2+(ygrid-curcen[1])**2)**.5)/currad*thresh
+			im[curim<thresh]=np.exp(-.5*curim**2)[curim<thresh]
+			xs = np.append(xs, curcen[0] + currad * np.cos(fis))
+			ys = np.append(ys, curcen[1] + currad * np.sin(fis))
+	plt.imshow(im.T, cmap=cmap, extent=xr+yr)
+	plt.plot(xs, ys, 'r-')
 
 def make3dDynamicsMovie(data, filename="output.mp4", Min=-20, Max=20, size=8, fps=30, noShow=True):
 	"""
@@ -337,3 +443,209 @@ def make3dRotatingMovie(data, filename="output.mp4", size=8, fps=30, noShow=True
 
 	anim = animation.FuncAnimation(fig,animate,frames=25,interval=10,blit=False)
 	anim.save(filename,fps=fps,extra_args=['-vb','10M','-vcodec', 'mpeg4'])
+	 
+
+def computeLagrad(data,lagrad = [1,2,5,10,25,50,75,90]):
+	"""
+	Compute the lagrange radii for the percentages given by lagrad
+	from the given data (story dynamics) 
+	"""
+	from numpy import array, sum, argsort
+	from numpy.linalg import norm
+
+	output = []
+
+	for snap in data:
+		time = snap[0]
+		particles = snap[1:]
+		mANDr = array([[p[7],norm(p[:3])] for p in particles])
+		mass = sum(mANDr.T[0])
+		args = argsort(mANDr.T[1])
+		mANDr = mANDr[args]
+		radii = array(lagrad)*mass/100. 
+
+		l = 0
+		cumMass = 0
+		LagRad = []
+		for particle in mANDr:
+			cumMass += particle[0]
+			if cumMass >= radii[l]:
+				LagRad.append(particle[1])
+				l += 1
+				if l == len(radii):
+					break
+		
+		output.append([time,LagRad])
+
+	return output
+
+def plotComputedLagrad(LagRad,lagrad = [1,2,5,10,25,50,75,90]):
+	"""
+	Plots the lagrange radii, given by lagrad
+	Takes output from computeLagrad
+	"""
+	import matplotlib.pyplot as plt
+	from numpy import array
+	times = []
+	radii = []
+	for things in LagRad:
+		times.append(things[0])
+		radii.append(things[1])
+
+	times = array(times) # * 0.11440499869028585 #  0.057407700000000006
+	radii = array(radii)
+
+	for rad in radii.T:
+		plt.plot(times,rad)
+
+	plt.legend(lagrad)
+
+	
+def computeAngularMomentum(data,threshold):
+	"""
+	Computes the angular momentum support of the innermost 'threshold' number of
+	particles
+
+	Returns [support, L], where support is an array of the form [time, radii at
+	threshold, T/W, beta] and L is the angular momentum vectors
+	"""
+	things = []
+	angMom = []
+	from numpy import array, dot
+	from numpy.linalg import norm
+
+	for snapshot in data:
+		posBHs = array([p[:3] for p in snapshot[1:]])
+		velBHs = array([p[3:6] for p in snapshot[1:]])
+		masses = array([p[7] for p in snapshot[1:]])
+		radii = array([norm(p) for p in posBHs])
+		posBHs = posBHs[radii.argsort()]
+		velBHs = velBHs[radii.argsort()]
+		masses = masses[radii.argsort()]
+
+		vr2Ave = 0
+		vt2Ave = 0
+
+		posBH = posBHs[:threshold]
+		velBH = velBHs[:threshold]
+		m = masses[:threshold]
+
+		for i in range(len(posBH)):
+			rHat = posBH[i] / norm(posBH[i])
+			vRad = dot(rHat,velBH[i])
+			vTan = norm(velBH[i] - vRad*rHat)
+			vr2Ave += vRad**2
+			vt2Ave += vTan**2
+		vr2Ave /= len(posBH)
+		vt2Ave /= len(posBH)
+
+		W = 0
+		L = zeros(3)
+		I = 0
+
+		for i in range(len(posBH)):
+			for j in range(len(posBH)):
+				if i == j:
+					continue
+				W += m[i]*m[j]/norm( posBH[i] - posBH[j])
+
+		L = zeros(3)
+		for i in range(len(posBH)):
+			L += m[i]*cross(posBH[i],velBH[i])
+
+		I = 0
+		for i in range(len(posBH)):
+			I += m[i]*dot(posBH[i],posBH[i])
+
+		things.append(array([snapshot[0],radii[threshold-1],norm(L)**2/(I*W),1-vt2Ave/vr2Ave]))
+		angMom.append(L)
+
+	return array(things), array(angMom)
+	
+
+def make2dScatteringMovie(data, filename="output.mp4", Min=-20, Max=20, size=8,
+fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0):
+	"""
+	Make a 3D movie of the dynamics from kira, using the data from parseStoryDynamics
+	filename - duh
+	Min/Max  - size of the plot range
+	size	 - size of the saved figures
+	fps	  - duh
+	noShow   - don't show the movie plots as they're being made
+	"""
+	from mpl_toolkits.mplot3d import Axes3D
+	from matplotlib import animation, pyplot as plt
+
+	def animate(i):
+		plt.cla()
+		x = [p[0] for p in data[i][1:] if p[7] < .25]
+		y = [p[1] for p in data[i][1:] if p[7] < .25]
+		z = [p[2]+0.5 for p in data[i][1:] if p[7] < .25]
+		particles = len(data[i][1:])
+		scat = ax.scatter3D(x,y,z,
+				 s= [175*p[6] for p in data[i][1:] if p[7] < .25],
+						  alpha=1.0,color='b',marker='*',edgecolor='b',zorder=1)
+		x = [p[0] for p in data[i][1:] if p[7] > .25]
+		y = [p[1] for p in data[i][1:] if p[7] > .25]
+		z = [p[2]+0.5 for p in data[i][1:] if p[7] > 0.25]
+		particles = len(data[i][1:])
+		scat = ax.scatter3D(x,y,z,
+				 s= [175*p[6] for p in data[i][1:] if p[7] > .25],
+						  alpha=1.0,marker="*",edgecolor='r',c='r',zorder=0)
+
+		if streaks:
+			for par in range(particles):
+				X = []
+				Y = []
+				Z = []
+				for j in range(i+1):
+					X.append(data[j][par+1][0])
+					Y.append(data[j][par+1][1])
+					Z.append(data[j][par+1][2])
+				if data[i][par+1][7] > .25:
+					C = 'red'
+				else: 
+					C = 'blue'
+#				if data[i][par+1][8] == 2:
+#					AL = 0.0
+#				else:
+				AL = 0.751
+				ax.plot(X,Y,Z,color=C,alpha=AL,lw=1.5,zorder=2)
+
+		ax.set_xlim(-12,24) 
+		ax.set_ylim(Min,Max)
+		ax.set_zlim(Min,Max)
+		ax.view_init(azim=-90,elev=90)
+		ax.grid(False)
+		ax.set_axis_off()
+		ax.set_frame_on(False)
+		for axis in ax.w_xaxis, ax.w_yaxis, ax.w_zaxis: 
+		  for elt in axis.get_ticklines() + axis.get_ticklabels(): 
+			  elt.set_visible(False) 
+
+		  axis.pane.set_visible(False) 
+		  axis.gridlines.set_visible(False) 
+		  axis.line.set_visible(False) 
+		return scat
+
+	if noShow:
+		plt.ioff()
+
+	if num_frames == 0:
+		num_frames = len(data) - 1
+
+	if num_frames > len(data):
+		print "More frames than snapshots!"
+		return
+
+	fig = plt.figure(figsize=(size,10))
+	fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
+	ax = fig.add_subplot(111, projection='3d')
+
+	anim = animation.FuncAnimation(fig,animate,frames=num_frames,interval=50,blit=False)
+	anim.save(filename,fps=fps,extra_args=['-codec:v','libx264','-profile:v','high','-preset','slow','-b:v', '25M','-pix_fmt','yuv420p'])
+
+	thing = animate(num_frames)
+	plt.savefig("/Users/carl/Desktop/test.png")
+
+	#anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec','mpeg'])
