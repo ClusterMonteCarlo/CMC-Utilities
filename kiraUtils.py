@@ -1,4 +1,4 @@
-def parseStoryDynamics(filename):
+def parseStoryDynamics(filename,scattering=False):
 	"""
 	Imports a Starlab Story for the dynamical information
 
@@ -8,6 +8,9 @@ def parseStoryDynamics(filename):
 
 	Where the 8 elements of the array for each particle are:
 		[x,y,z,vx,vy,vz,binFlag,m,id]
+	
+	If Scattering is true, it ignores the COM correction, since Fewbody doesn't
+	care
 	"""
 	data = []
 	i = -1
@@ -26,7 +29,11 @@ def parseStoryDynamics(filename):
 				line = file.readline() #advance forward to end up dynamics
 				if line.split()[0] == 'com_pos':
 					xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
+				elif scattering and line.split()[0] == 'r':
+					xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
 				elif line.split()[0] == 'com_vel': 
+					vxCOM,vyCOM,vzCOM = stringsToFloats(line.split()[2:])
+				elif scattering and line.split()[0] == 'v': 
 					vxCOM,vyCOM,vzCOM = stringsToFloats(line.split()[2:])
 		elif line.split()[0] == 'i':
 			idNum = int(line.split()[2])
@@ -57,7 +64,7 @@ def parseStoryDynamics(filename):
 		elif line.split()[0] == ')Dynamics':
 			data[i].append([x,y,z,vx,vy,vz,binFlag,m,idNum])
 			line = file.readline()
-			while count != 0:
+			while count != 0 and len(line.split()) > 0:
 				if line.split()[0] == ')Dynamics':
 					count -= 1
 				line = file.readline()

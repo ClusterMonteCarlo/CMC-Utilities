@@ -14,7 +14,7 @@ def au_to_period(a,m):
 	with mass m (solar masses) and sem-major axis a (AU)
 	"""
 	g = 2.96e-4 # G in days,AU,solar masses
-	return sqrt(a**3 * 4*np.pi**2 / (g*m))
+	return np.sqrt(a**3 * 4*np.pi**2 / (g*m))
 
 def au_to_vel(a,m):
 	"""
@@ -31,7 +31,7 @@ def half_mass_relaxation_time(N,rh,m,gamma):
 	an average mass of m, and a Columb Log of gamma
 	"""
 	g = 4499.72292 # G in gyr,pc,solar masses
-	return 0.138*sqrt(N * rh**3 / (m*g)) / log(gamma*N)
+	return 0.138*np.sqrt(N * rh**3 / (m*g)) / log(gamma*N)
 
 def find_rtidal(mc,vg=220.,rg=8000.):
 	"""takes the cluster mass (mc) in solar mass, 
@@ -56,16 +56,16 @@ def plummer_pot(M,a,r):
 	"""
 	Plummer potential at r
 	"""
-	return (-M/a) / sqrt(1+r**2/a**2)
+	return (-M/a) / np.sqrt(1+r**2/a**2)
 
 def plummer_sigma(M,a,r):
 	"""
 	Plummer 1D velocity dispersion at r 
 	"""
-	return sqrt(-plummer_pot(M,a,r) / 6)
+	return np.sqrt(-plummer_pot(M,a,r) / 6)
 	
 def plummer_vc(M,a,r):
 	"""
 	Circular velocity for plummer sphere at r
 	"""
-	return sqrt(plummer_m_r(M,a,r) / r)
+	return np.sqrt(plummer_m_r(M,a,r) / r)
