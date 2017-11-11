@@ -35,7 +35,7 @@ class collision:
 		k1 = args[6].split('=')[1]
 		k2 = args[7].split('=')[1]
 		k3 = args[8].split('=')[1].rstrip()
-		self.out_types = int(km)
+		self.out_type = int(km)
 		self.in_types = (int(k1),int(k2),int(k3))
 
 	def parse_three_coll(self,args):
@@ -50,7 +50,7 @@ class collision:
 		k2 = args[7].split('=')[1]
 		k3 = args[8].split('=')[1]
 		k4 = args[9].split('=')[1].rstrip()
-		self.out_types = int(km)
+		self.out_type = int(km)
 		self.in_types = (int(k1),int(k2),int(k3),int(k4))
 
 	def __init__(self, string):

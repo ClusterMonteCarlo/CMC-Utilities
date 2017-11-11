@@ -18,11 +18,11 @@ def au_to_period(a,m):
 
 def au_to_vel(a,m):
 	"""
-	Returns the orbital velocity (in ) for a binary
+	Returns the orbital velocity (in km/s) for a binary
 	with mass m (solar masses) and sem-major axis a (AU)
 	"""
 	period = au_to_period(a,m)
-	return 2*np.pi*a / period
+	return 1731.45684*2*np.pi*a / period
 
 def half_mass_relaxation_time(N,rh,m,gamma):
 	"""
