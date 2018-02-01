@@ -35,7 +35,7 @@ class collision:
 		k1 = args[6].split('=')[1]
 		k2 = args[7].split('=')[1]
 		k3 = args[8].split('=')[1].rstrip()
-		self.out_types = int(km)
+		self.out_type = int(km)
 		self.in_types = (int(k1),int(k2),int(k3))
 
 	def parse_three_coll(self,args):
@@ -50,7 +50,7 @@ class collision:
 		k2 = args[7].split('=')[1]
 		k3 = args[8].split('=')[1]
 		k4 = args[9].split('=')[1].rstrip()
-		self.out_types = int(km)
+		self.out_type = int(km)
 		self.in_types = (int(k1),int(k2),int(k3),int(k4))
 
 	def __init__(self, string):
@@ -130,18 +130,19 @@ class star:
 	"""
 	A cheap-ass container for keeping track of stars
 	"""	
-	def __init__(self,m,r,id):
+	def __init__(self,m,r,id,ktype=-1):
 		self.m = m
 		self.r = r
 		self.id = id
+		self.ktype = ktype
 		
 class binary:
 	"""
 	A cheap-ass container for keeping track of binaries
 	"""	
-	def __init__(self,m1,r1,id1,m2,r2,id2,a,e):
-		self.star1 = star(m1,r1,id1)
-		self.star2 = star(m2,r2,id2)
+	def __init__(self,m1,r1,id1,m2,r2,id2,a,e,k1=-1,k2=-1):
+		self.star1 = star(m1,r1,id1,k1)
+		self.star2 = star(m2,r2,id2,k2)
 		self.a = a
 		self.e = e
 		
@@ -155,6 +156,9 @@ class binary:
 	def id1(self):
 		return self.star1.id
 	@property
+	def k1(self):
+		return self.star1.ktype
+	@property
 	def m2(self):
 		return self.star2.m
 	@property
@@ -163,6 +167,9 @@ class binary:
 	@property
 	def id2(self):
 		return self.star2.id
+	@property
+	def k2(self):
+		return self.star2.ktype
 	
 	def same_binary(self,b1):
 		if(b1.id1 == self.id1 and b1.id2 == self.id2 or
@@ -175,9 +182,9 @@ class triple:
 	"""
 	A cheap-ass container for keeping track of triples
 	"""	
-	def __init__(self,m1,r1,id1,m2,r2,id2,m3,r3,id3,a_in,e_in,a_out,e_out):
-		self.star = star(m3,r3,id3)
-		self.binary = binary(m1,r1,id1,m2,r2,id2,a_in,e_in)
+	def __init__(self,m1,r1,id1,m2,r2,id2,m3,r3,id3,a_in,e_in,a_out,e_out,k1=-1,k2=-1,k3=-1):
+		self.star = star(m3,r3,id3,k3)
+		self.binary = binary(m1,r1,id1,m2,r2,id2,a_in,e_in,k1,k2)
 		self.a_out = a_out
 		self.e_out = e_out
 		
@@ -191,6 +198,9 @@ class triple:
 	def id1(self):
 		return self.binary.id1
 	@property
+	def k1(self):
+		return self.binary.k1
+	@property
 	def m2(self):
 		return self.binary.m2
 	@property
@@ -199,6 +209,9 @@ class triple:
 	@property
 	def id2(self):
 		return self.binary.id3
+	@property
+	def k2(self):
+		return self.binary.k2
 	@property
 	def a_in(self):
 		return self.binary.a
@@ -214,6 +227,9 @@ class triple:
 	@property
 	def id3(self):
 		return self.star.id
+	@property
+	def k3(self):
+		return self.star.ktype
 
 	
 	
@@ -232,13 +248,16 @@ class binint:
 	def parse_single(self,args):
 		m = float(args[2].split('=')[1])
 		R = float(args[3].split('=')[1])
-		id_s = args[5].split('=')[1].rstrip()
+		id_s = args[5].split('=')[1].rstrip('\n')
 		if ':' in id_s:
 			self.collision = 0
 		else:
 			id_s = int(id_s)
-	
-		return star(m,R,id_s)
+		if len(args) > 6:
+			ktype = int(args[6].split('=')[1].rstrip('\n'))
+		else:
+			ktype = -1
+		return star(m,R,id_s,ktype)
 	
 	def parse_binary(self,args):
 		m1 = float(args[2].split('=')[1])
@@ -256,11 +275,18 @@ class binint:
 			self.collision = 0
 		else:
 			id2 = int(id2)
+
+		if len(args) > 12:
+			k1 = int(args[12].split('=')[1])
+			k2 = int(args[13].split('=')[1].rstrip('\n'))
+		else:
+			k1 = -1
+			k2 = -1
 			
 		a = float(args[10].split('=')[1])
-		e = float(args[11].split('=')[1].rstrip())
+		e = float(args[11].split('=')[1].rstrip('\n'))
 		
-		return binary(m1,R1,id1,m2,R2,id2,a,e)
+		return binary(m1,R1,id1,m2,R2,id2,a,e,k1,k2)
 	
 	def parse_triple(self,args):
 		m1 = float(args[2].split('=')[1])
@@ -287,13 +313,22 @@ class binint:
 		else:
 			id3 = int(id3)
 
+		if len(args) > 18:
+			k1 = int(args[18].split('=')[1])
+			k2 = int(args[19].split('=')[1])
+			k3 = int(args[20].split('=')[1].rstrip('\n'))
+		else:
+			k1 = -1
+			k2 = -1
+			k3 = -1
+
 		a_in = float(args[14].split('=')[1])
-		e_in = float(args[16].split('=')[1].rstrip())
+		e_in = float(args[16].split('=')[1])
 
 		a_out = float(args[15].split('=')[1])
-		e_out = float(args[17].split('=')[1].rstrip())
+		e_out = float(args[17].split('=')[1].rstrip('\n'))
 
-		return triple(m1,R1,id1,m2,R2,id2,m3,R3,id3,a_in,e_in,a_out,e_out)
+		return triple(m1,R1,id1,m2,R2,id2,m3,R3,id3,a_in,e_in,a_out,e_out,k1,k2,k3)
 
 		
 	def parse_params(self,args):
@@ -400,7 +435,7 @@ class conversion_file:
 
 	the __init__ function takes the FILENAME, and saves all the units as class objects
 	"""
-    
+	
 	def parse_conv_file(self,filename):
 		with open(filename) as f:
 			lines = f.readlines()
