@@ -190,7 +190,7 @@ class triple:
 		
 	@property
 	def m1(self):
-		return self.binary.id1
+		return self.binary.m1
 	@property
 	def r1(self):
 		return self.binary.r1
@@ -208,7 +208,7 @@ class triple:
 		return self.binary.r2
 	@property
 	def id2(self):
-		return self.binary.id3
+		return self.binary.id2
 	@property
 	def k2(self):
 		return self.binary.k2
@@ -477,7 +477,7 @@ def load_ineraction_files(file_prefix):
 	Actually does the work of loading the binint, collision, and se_merger files into
 	the pythonic classes we've developed. Takes the file prefix as an input and returns
 
-	([list of binints],[list of collisions],[list of mergers]) 
+	(units,[list of binints],[list of collisions],[list of mergers]) 
     """
 	binintfile=file_prefix+'.binint.log'
 	collfile=file_prefix+'.collision.log'

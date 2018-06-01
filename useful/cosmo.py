@@ -5,9 +5,9 @@ import numpy as np
 
 def comovingDistance(z):
     h = 0.679
-    omegaM = 0.306
+    omegaM = 0.3065
     omegaK = 0.
-    omegaL = 1 - 0.306
+    omegaL = 1 - omegaM 
     dh = 3000. / h
     e = lambda zp: 1./np.sqrt(omegaM*(1+zp)**3 + omegaL)
     return dh*integrate.quad(e,0,z)[0]
@@ -21,22 +21,22 @@ def zAtLuminosityDistance(d):
     
 def lookbackTime(z):
     h = 0.679
-    omegaM = 0.306
+    omegaM = 0.3065
     omegaK = 0.
-    omegaL = 1 - 0.306
+    omegaL = 1 - omegaM
     th = 9.78/h
     e = lambda zp: 1./(np.sqrt(omegaM*(1+zp)**3 + omegaL)*(1+zp))
     return th*integrate.quad(e,0,z)[0]
 
 def zAtLookbackTime(t):
     zero = lambda z: lookbackTime(z) - t
-    return brentq(zero,0,10)
+    return brentq(zero,0,10000)
 
 def dVcdz(z):
     h = 0.679
-    omegaM = 0.306
+    omegaM = 0.3065
     omegaK = 0.
-    omegaL = 1 - 0.306
+    omegaL = 1 - omegaM
     dh = 3000. / h
     e = np.sqrt(omegaM*(1+z)**3 + omegaL)
     return 4*np.pi*dh*comovingDistance(z)**2/e

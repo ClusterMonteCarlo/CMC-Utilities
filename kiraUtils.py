@@ -25,12 +25,15 @@ def parseStoryDynamics(filename,scattering=False):
 			t = float(line.split()[2])
 			data.append([t])
 			i += 1
+			if scattering:
+				count = 0
 			while line.split()[0] != ')Dynamics':
 				line = file.readline() #advance forward to end up dynamics
 				if line.split()[0] == 'com_pos':
 					xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
 				elif scattering and line.split()[0] == 'r':
 					xCOM,yCOM,zCOM = stringsToFloats(line.split()[2:])
+					xCOM,yCOM,zCOM = 0,0,0 
 				elif line.split()[0] == 'com_vel': 
 					vxCOM,vyCOM,vzCOM = stringsToFloats(line.split()[2:])
 				elif scattering and line.split()[0] == 'v': 
@@ -585,47 +588,85 @@ fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0):
 
 	def animate(i):
 		plt.cla()
-		x = [p[0] for p in data[i][1:] if p[7] < .25]
-		y = [p[1] for p in data[i][1:] if p[7] < .25]
-		z = [p[2]+0.5 for p in data[i][1:] if p[7] < .25]
+		x = [p[0] for p in data[i][1:] if p[7] < .5]
+		y = [p[1] for p in data[i][1:] if p[7] < .5]
+		z = [p[2] for p in data[i][1:] if p[7] < .5]
 		particles = len(data[i][1:])
-		scat = ax.scatter3D(x,y,z,
-				 s= [175*p[6] for p in data[i][1:] if p[7] < .25],
-						  alpha=1.0,color='b',marker='*',edgecolor='b',zorder=1)
-		x = [p[0] for p in data[i][1:] if p[7] > .25]
-		y = [p[1] for p in data[i][1:] if p[7] > .25]
-		z = [p[2]+0.5 for p in data[i][1:] if p[7] > 0.25]
+		scat = ax.plot(x,y,z,lw=0,zdir='z',
+				 markersize=20, markeredgecolor='black',
+						  alpha=1.0,color='cyan',marker='*',zorder=5)
+		x = [p[0] for p in data[i][1:] if p[7] > .5 and p[7] < 0.85]
+		y = [p[1] for p in data[i][1:] if p[7] > .5 and p[7] < 0.85]
+		z = [p[2] for p in data[i][1:] if p[7] > 0.5 and p[7] < 0.85]
 		particles = len(data[i][1:])
-		scat = ax.scatter3D(x,y,z,
-				 s= [175*p[6] for p in data[i][1:] if p[7] > .25],
-						  alpha=1.0,marker="*",edgecolor='r',c='r',zorder=0)
+		scat = ax.plot(x,y,z,lw=0,zdir='z',
+				 markersize=20, markeredgecolor='C1',
+						  alpha=1.0,marker="*",c='C1',zorder=5)
+		x = [p[0] for p in data[i][1:] if p[7] > .85]
+		y = [p[1] for p in data[i][1:] if p[7] > .85]
+		z = [p[2] for p in data[i][1:] if p[7] > 0.85]
+		particles = len(data[i][1:])
+		scat = ax.plot(x,y,z,lw=0,zdir='z',
+				 markersize=0.030,markeredgecolor='black',
+						  alpha=1.0,marker="*",c='C3',zorder=5)
 
 		if streaks:
-			for par in range(particles):
+			for par in range(len(data[0][1:])):
 				X = []
 				Y = []
 				Z = []
+				last_idx = 0
 				for j in range(i+1):
+					if len(data[j][1:]) < len(data[0][1:]) and last_idx == 0:
+						last_idx = j-1
+						if data[last_idx][par+1][7] < .5:
+							C = 'cyan'
+						elif data[last_idx][par+1][7] < .85: 
+							C = 'C1'
+						else:
+							C = 'C3'
+						AL = 0.751
+						ax.plot(X,Y,Z,color=C,alpha=AL,lw=1.5,zorder=2)
+						X = []
+						Y = []
+						Z = []
+					if par >= len(data[j][1:]):
+						break
 					X.append(data[j][par+1][0])
 					Y.append(data[j][par+1][1])
 					Z.append(data[j][par+1][2])
-				if data[i][par+1][7] > .25:
-					C = 'red'
-				else: 
-					C = 'blue'
+						
+				if par >= len(data[i][1:]):
+					continue
+				if data[i][par+1][7] < .5:
+					C = 'cyan'
+					wid = 1.5
+				elif data[i][par+1][7] < .85: 
+					C = 'C1'
+					wid = 1.5
+				else:
+					C = 'C3'
+					wid = 2.5
 #				if data[i][par+1][8] == 2:
 #					AL = 0.0
 #				else:
 				AL = 0.751
-				ax.plot(X,Y,Z,color=C,alpha=AL,lw=1.5,zorder=2)
+				ax.plot(X,Y,Z,color=C,alpha=AL,lw=wid,zorder=2)
 
-		ax.set_xlim(-12,24) 
-		ax.set_ylim(Min,Max)
-		ax.set_zlim(Min,Max)
-		ax.view_init(azim=-90,elev=90)
+		#ax.set_xlim(0.37,0.3705) 
+		#ax.set_ylim(-0.09295,-0.09306)
+		#ax.set_zlim(-0.01828,-0.01831)
+		ax.set_xlim(0.378,0.380) 
+		ax.set_ylim(-0.08985,-0.09916)
+		ax.set_zlim(-0.01818,-0.02241)
+		#ax.set_xlim(-30,10) 
+		#ax.set_ylim(Min/1.,Max/1.)
+		#ax.set_zlim(Min/1.,Max/1.)
+		ax.view_init(azim=0,elev=0)
 		ax.grid(False)
 		ax.set_axis_off()
 		ax.set_frame_on(False)
+		ax.set_facecolor('black')
 		for axis in ax.w_xaxis, ax.w_yaxis, ax.w_zaxis: 
 		  for elt in axis.get_ticklines() + axis.get_ticklabels(): 
 			  elt.set_visible(False) 
