@@ -330,6 +330,9 @@ class binint:
 
 		return triple(m1,R1,id1,m2,R2,id2,m3,R3,id3,a_in,e_in,a_out,e_out,k1,k2,k3)
 
+	def parse_status(self,args):
+		self.vesc = float(args[7].split('=')[1])
+		self.de_gw = float(args[6].split('=')[1].rstrip())
 		
 	def parse_params(self,args):
 		self.b = float(args[1].split('=')[1])
@@ -382,6 +385,8 @@ class binint:
 				self.parse_params(args)
 			elif args[0] == 'input:':
 				self.parse_input(args)
+			elif args[0] == 'status:':
+				self.parse_status(args)
 			elif args[0] == 'output:':
 				self.parse_output(args)		 
 				
