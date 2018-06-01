@@ -1,3 +1,4 @@
+from __future__ import division
 from scipy import integrate
 from scipy.integrate import ode
 import numpy as np
@@ -58,28 +59,36 @@ def a_at_fLow(m1,m2,fLow = 5):
 	quant = G*(m1+m2) / (4*np.pi**2 * fLow**2)
 	return quant**(1./3)
 
-def eccentricity_at_fLow(m1,m2,a_0,e_0,fLow=5):
+def eccentricity_at_a(m1,m2,a_0,e_0,a):
 	"""
-	Computes the eccentricity at a given fLow
+	Computes the eccentricity at a given semi-major axis a 
 	
 	Masses are in solar masses, a_0 in AU
 	
-	NOTE!!! The frequency here is the ORBITAL frequency.  
-	So if you want the eccentricity at a G-wave frequency of 10, set fLow=5
-	(divide by 2)
 	"""
-	a_low = a_at_fLow(m1,m2,fLow)
-	
 	r = ode(deda_peters)
 	r.set_integrator('lsoda')
 	r.set_initial_value(e_0,a_0)
 	
-	r.integrate(a_low)
+	r.integrate(a)
 	
 	if not r.successful():
 		print "ERROR, Integrator failed!"
 	else:
 		return r.y[0]
+
+def eccentricity_at_fLow(m1,m2,a_0,e_0,fLow=10):
+	"""
+	Computes the eccentricity at a given fLow, assuming f_gw = 2*f_orb
+	
+	Masses are in solar masses, a_0 in AU
+	
+	NOTE!!! The frequency here is the gravitational-wave frequency.  
+	"""
+	a_low = a_at_fLow(m1,m2,fLow/2.)
+
+	return eccentricity_at_a(m1,m2,a_0,e_0,a_low)
+	
 
 def eccentric_gwave_freq(a,m,e):
 	"""
@@ -87,8 +96,40 @@ def eccentric_gwave_freq(a,m,e):
 	M (solar masses), and eccentricity e, using the formula from Wen 2003
 	"""
 	from random import au_to_period
-	period = 2*np.pi / (86400*au_to_period(a,m))
+	period = 1 / (86400*au_to_period(a,m))
 	return 2*period*pow(1+e,1.1954)/pow(1-e*e,1.5)
+
+def eccentricity_at_eccentric_fLow(m1,m2,a_0,e_0,fLow=10,retHigh = False):
+	"""
+	Computes the eccentricity at a given fLow using the peak frequency from Wen
+	2003
+	
+	Masses are in solar masses, a_0 in AU.  The frequency here is the
+	gravitational-wave frequency.
+
+	Note that it is possible that, for binaries that merge in fewbody, there is
+	no solution, since the binary was pushed into the LIGO band above 10Hz.  In
+	this case, there is no a/e from that reference that will give you 10Hz, so
+	this just returns e_0 by default, and 0.99 if retHigh is true
+	"""
+	from scipy.optimize import brentq
+
+	ecc_at_a = lambda a: eccentricity_at_a(m1,m2,a_0,e_0,a)
+	freq_at_a = lambda a: eccentric_gwave_freq(a,m1+m2,ecc_at_a(a))
+	zero_eq = lambda a: freq_at_a(a) - fLow
+
+	lower_start = zero_eq(1e-10)
+	upper_start = zero_eq(1)
+
+	if (np.sign(lower_start) == np.sign(upper_start) or 
+		np.isnan(lower_start) or np.isnan(upper_start)):
+		if retHigh:
+			return 0.99
+		else:
+			return e_0
+	else:	
+		a_low = brentq(zero_eq,1e-10,1)
+		return ecc_at_a(a_low) 
 
 def timescale_perihelion_precession(a,e,M):
 	"""
