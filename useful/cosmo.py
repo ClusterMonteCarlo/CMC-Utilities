@@ -17,7 +17,7 @@ def luminosityDistance(z):
     
 def zAtLuminosityDistance(d):
     zero = lambda z: luminosityDistance(z) - d
-    return brentq(zero,0,5)    
+    return brentq(zero,0,200)    
     
 def lookbackTime(z):
     h = 0.679
@@ -28,9 +28,17 @@ def lookbackTime(z):
     e = lambda zp: 1./(np.sqrt(omegaM*(1+zp)**3 + omegaL)*(1+zp))
     return th*integrate.quad(e,0,z)[0]
 
+def recessionalVelocity(z):
+    h = 0.679
+    omegaM = 0.3065
+    omegaK = 0.
+    omegaL = 1 - omegaM
+    e = lambda zp: 1./(np.sqrt(omegaM*(1+zp)**3 + omegaL))
+    return integrate.quad(e,0,z)[0]
+
 def zAtLookbackTime(t):
     zero = lambda z: lookbackTime(z) - t
-    return brentq(zero,0,10000)
+    return brentq(zero,0,200)
 
 def dVcdz(z):
     h = 0.679

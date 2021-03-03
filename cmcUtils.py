@@ -215,29 +215,6 @@ def plotEnergyPerR(filename='',movie=False,index=0,gamma=0,N=0):
 
 
 def escapedBH(filename = '', gamma = 0, N = 0, nBH = 65, thresh = 0.98094568, Color='r'):
-<<<<<<< HEAD
-    """ plots the escaped heavy particles with mass above threshold from the .esc.dat file 
-    (it kinda assumes everything is a multiple of thresh)
-    Filename -- obvious (defaults to *.esc.dat if in right folder)
-    gamma and N -- for conversion to N-body time
-    nBH -- number of initial black holes"""
-    from os import listdir
-    from numpy import loadtxt, log, transpose, append
-    from matplotlib.pyplot import plot,yscale,ylim,grid,xlabel,ylabel,text,title
-    if filename == '':
-        filename = [name for name in listdir('.') if name.endswith('.esc.dat')][0]
-    data = loadtxt(filename,usecols=(1,2))
-    new = [[dat[0],round(dat[1]/thresh/2/10)] for dat in data if dat[1] > thresh]
-    for dat in new:
-        nBH += -dat[1]
-        dat[1] = nBH
-    t, NBH = transpose(new)
-    NBH = append(NBH,NBH[-1]) #kludge to make the line extend if single BH remaining
-    t = append(t,2*t[-1]) #HILARIOUSLY bad form
-    if not gamma == 0 and not N == 0:
-        t = N * t / log( gamma * N )
-    plot(t,NBH,color=Color)
-=======
 	""" plots the escaped heavy particles with mass above threshold from the .esc.dat file 
 	(it kinda assumes everything is a multiple of thresh)
 	Filename -- obvious (defaults to *.esc.dat if in right folder)
@@ -258,7 +235,6 @@ def escapedBH(filename = '', gamma = 0, N = 0, nBH = 65, thresh = 0.98094568, Co
 	if not gamma == 0 and not N == 0:
 		new[0] = N * new[0] / log( gamma * N )
 	plot(new[0],new[1],color=Color)
->>>>>>> dab56558ecf9192bbed950e160e1c0dc3b30aa52
 
 
 def rToXY(r):
@@ -270,60 +246,7 @@ def rToXY(r):
 	y = r*sinTheta*sin(phi)
 	return x,y
 
-<<<<<<< HEAD
-def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-5,Max=5):
-=======
 def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-4,Max=4):
-<<<<<<< HEAD
->>>>>>> 711d3ecb3cd394c32d7a64d5c95294bedf8d1ffb
-    from matplotlib import animation, pyplot as plt
-    from os import listdir,system
-    from numpy import loadtxt
-
-    names = listdir('.')
-    snaps = [snap for snap in names if 'out.snap' in snap] #lol
-    snaps.sort()
-
-    if '.gz' in snaps[0] or '.gz' in snaps[-1]:
-        print 'Snapshots haven\'t been unzipped; it might take a while'
-        system('gunzip *.dat.gz') #there are like a million better ways to do this
-        print 'Done with that'
-        names = listdir('.')
-        snaps = [snap for snap in names if 'out.snap' in snap] #lol
-        snaps.sort()
-
-    def animate(i):
-<<<<<<< HEAD
-            plt.cla()
-            mANDr = loadtxt(snaps[i],usecols=(14,2))
-            points = [rToXY(p[1]) for p in mANDr]
-            x = [p[0] for p in points]
-            y = [p[1] for p in points]
-            plt.xlim(Min,Max)
-            plt.ylim(Min,Max)
-            scat = plt.scatter(x,y,s=0.05,color='black')
-            points = [rToXY(p[1]) for p in mANDr if p[0] ==14]
-            x = [p[0] for p in points]
-            y = [p[1] for p in points]
-            scatBH = plt.scatter(x,y,s=10,color='red')
-            return scat
-=======
-        plt.cla()
-        mANDr = loadtxt(snaps[i],usecols=(1,2))
-        points = [rToXY(p[1]) for p in mANDr]
-        x = [p[0] for p in points]
-        y = [p[1] for p in points]
-        plt.xlim(Min,Max) 
-        plt.ylim(Min,Max)
-        scat = plt.scatter(x,y,s=0.05,color='black')
-        points = [rToXY(p[1]) for p in mANDr if p[0] > 1.]
-        x = [p[0] for p in points]
-        y = [p[1] for p in points]
-        scatBH = plt.scatter(x,y,s=10,color='red')
-        plt.grid(True)
-        return scat
->>>>>>> 711d3ecb3cd394c32d7a64d5c95294bedf8d1ffb
-=======
 	from matplotlib import animation, pyplot as plt
 	from os import listdir,system
 	from numpy import loadtxt
@@ -356,26 +279,12 @@ def makeDynamicsMovie(filename='output.mp4',noShow=True,size=8,fps=30,Min=-4,Max
 		plt.grid(True)
 		plt.title("Time = " + str(t*1.0643)[:5] + " Gyr")
 		return scat
->>>>>>> dab56558ecf9192bbed950e160e1c0dc3b30aa52
 
 	if noShow:
 		plt.ioff()
 
-<<<<<<< HEAD
-    fig, ax = plt.subplots(figsize=(size,size))
-<<<<<<< HEAD
-    animate(0)
-
-    anim = animation.FuncAnimation(fig,animate,frames=len(snaps)/100,interval=10,blit=False)
-    anim.save(filename,fps=fps,extra_args=['-vb','5M','-vcodec', 'mpeg4'])
-
-=======
-    #animate(0)
->>>>>>> 711d3ecb3cd394c32d7a64d5c95294bedf8d1ffb
-=======
 	fig, ax = plt.subplots(figsize=(size,size))
 	#animate(0)
->>>>>>> dab56558ecf9192bbed950e160e1c0dc3b30aa52
 
 	anim = animation.FuncAnimation(fig,animate,frames=len(names),interval=1,blit=False)
 	anim.save(filename,fps=fps,bitrate=3000,extra_args=['-vcodec', 'mpeg4'])

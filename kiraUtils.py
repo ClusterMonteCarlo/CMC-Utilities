@@ -588,16 +588,16 @@ fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0):
 
 	def animate(i):
 		plt.cla()
-		x = [p[0] for p in data[i][1:] if p[7] < .5]
-		y = [p[1] for p in data[i][1:] if p[7] < .5]
-		z = [p[2] for p in data[i][1:] if p[7] < .5]
+		x = [p[0] for p in data[i][1:] if p[7] < .25]
+		y = [p[1] for p in data[i][1:] if p[7] < .25]
+		z = [p[2] for p in data[i][1:] if p[7] < .25]
 		particles = len(data[i][1:])
 		scat = ax.plot(x,y,z,lw=0,zdir='z',
 				 markersize=20, markeredgecolor='black',
 						  alpha=1.0,color='cyan',marker='*',zorder=5)
-		x = [p[0] for p in data[i][1:] if p[7] > .5 and p[7] < 0.85]
-		y = [p[1] for p in data[i][1:] if p[7] > .5 and p[7] < 0.85]
-		z = [p[2] for p in data[i][1:] if p[7] > 0.5 and p[7] < 0.85]
+		x = [p[0] for p in data[i][1:] if p[7] > .25 and p[7] < 0.85]
+		y = [p[1] for p in data[i][1:] if p[7] > .25 and p[7] < 0.85]
+		z = [p[2] for p in data[i][1:] if p[7] > .25 and p[7] < 0.85]
 		particles = len(data[i][1:])
 		scat = ax.plot(x,y,z,lw=0,zdir='z',
 				 markersize=20, markeredgecolor='C1',
@@ -619,9 +619,9 @@ fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0):
 				for j in range(i+1):
 					if len(data[j][1:]) < len(data[0][1:]) and last_idx == 0:
 						last_idx = j-1
-						if data[last_idx][par+1][7] < .5:
+						if data[last_idx][par+1][7] < .25:
 							C = 'cyan'
-						elif data[last_idx][par+1][7] < .85: 
+						elif data[last_idx][par+1][7] > .25: 
 							C = 'C1'
 						else:
 							C = 'C3'
@@ -638,10 +638,10 @@ fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0):
 						
 				if par >= len(data[i][1:]):
 					continue
-				if data[i][par+1][7] < .5:
+				if data[i][par+1][7] < .25:
 					C = 'cyan'
 					wid = 1.5
-				elif data[i][par+1][7] < .85: 
+				elif data[i][par+1][7] > .25: 
 					C = 'C1'
 					wid = 1.5
 				else:
@@ -656,12 +656,12 @@ fps=30, point_size = 100000, noShow=True, streaks=False, num_frames = 0):
 		#ax.set_xlim(0.37,0.3705) 
 		#ax.set_ylim(-0.09295,-0.09306)
 		#ax.set_zlim(-0.01828,-0.01831)
-		ax.set_xlim(0.378,0.380) 
-		ax.set_ylim(-0.08985,-0.09916)
-		ax.set_zlim(-0.01818,-0.02241)
-		#ax.set_xlim(-30,10) 
-		#ax.set_ylim(Min/1.,Max/1.)
-		#ax.set_zlim(Min/1.,Max/1.)
+		#ax.set_xlim(0.378,0.380) 
+		#ax.set_ylim(-0.08985,-0.09916)
+		#ax.set_zlim(-0.01818,-0.02241)
+		ax.set_xlim(-30,40) 
+		ax.set_ylim(Min/1.,Max/1.)
+		ax.set_zlim(Min/1.,Max/1.)
 		ax.view_init(azim=0,elev=0)
 		ax.grid(False)
 		ax.set_axis_off()

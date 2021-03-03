@@ -332,7 +332,7 @@ class binint:
 
 	def parse_status(self,args):
 		self.vesc = float(args[7].split('=')[1])
-		self.de_gw = float(args[6].split('=')[1].rstrip())
+		self.de_gw = float(args[5].split('=')[1].rstrip())
 		
 	def parse_params(self,args):
 		self.b = float(args[1].split('=')[1])
